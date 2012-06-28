@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="restful_service" default="help"
+         xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors"
+         xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
+    <property environment="env"/>
+    <path id="maven-ant-tasks.classpath" path="${env.HOME}/.ant/lib/maven-ant-tasks-2.1.3.jar"/>
+    <typedef resource="org/apache/maven/artifact/ant/antlib.xml"
+             uri="antlib:org.apache.maven.artifact.ant"
+             classpathref="maven-ant-tasks.classpath"/>
+
+    <!-- The local.properties file is created and updated by the 'android' tool.
+         It contains the path to the SDK. It should *NOT* be checked into
+         Version Control Systems. -->
+    <property file="local.properties"/>
+
+    <artifact:dependencies filesetId="leeloo">
+        <dependency groupId="net.smartam.leeloo" artifactId="oauth2-client"
+                    version="0.1"/>
+        <dependency groupId="net.smartam.leeloo" artifactId="oauth2-common"
+                    version="0.1"/>
+    </artifact:dependencies>
+
+    <!--You dont need this unless you want to use the CachingHttpClient etc...-->
+    <artifact:dependencies filesetId="httpclient">
+        <dependency groupId="org.apache.httpcomponents" artifactId="httpclient"
+                    version="4.1.3"/>
+        <dependency groupId="org.apache.httpcomponents" artifactId="httpclient-cache"
+                    version="4.1.3"/>
+    </artifact:dependencies>
+
+    <!-- The ant.properties file can be created by you. It is only edited by the
+         'android' tool to add properties to it.
+         This is the place to change some Ant specific build properties.
+         Here are some properties you may want to change/update:
+
+         source.dir
+             The name of the source directory. Default is 'src'.
+         out.dir
+             The name of the output directory. Default is 'bin'.
+
+         For other overridable properties, look at the beginning of the rules
+         files in the SDK, at tools/ant/build.xml
+
+         Properties related to the SDK location or the project target should
+         be updated using the 'android' tool with the 'update' action.
+
+         This file is an integral part of the build system for your
+         application and should be checked into Version Control Systems.
+
+         -->
+    <property file="ant.properties"/>
+
+    <!-- The project.properties file is created and updated by the 'android'
+         tool, as well as ADT.
+
+         This contains project specific properties such as project target, and library
+         dependencies. Lower level build properties are stored in ant.properties
+         (or in .classpath for Eclipse projects).
+
+         This file is an integral part of the build system for your
+         application and should be checked into Version Control Systems. -->
+    <loadproperties srcFile="project.properties"/>
+
+    <!-- quick check on sdk.dir -->
+    <fail
+            message="sdk.dir is missing. Make sure to generate local.properties using 'android update project' or to inject it through an env var"
+            unless="sdk.dir"
+            />
+
+    <target name="-pre-build">
+        <copy todir="libs">
+            <fileset refid="leeloo"/>
+            <!--<fileset refid="httpclient"/>-->
+            <mapper type="flatten"/>
+        </copy>
+    </target>
+
+
+    <!-- extension targets. Uncomment the ones where you want to do custom work
+in between standard targets -->
+    <!--
+        <target name="-pre-build">
+        </target>
+        <target name="-pre-compile">
+        </target>
+
+        /* This is typically used for code obfuscation.
+           Compiled code location: ${out.classes.absolute.dir}
+           If this is not done in place, override ${out.dex.input.absolute.dir} */
+        <target name="-post-compile">
+        </target>
+    -->
+
+    <!-- Import the actual build file.
+
+         To customize existing targets, there are two options:
+         - Customize only one target:
+             - copy/paste the target into this file, *before* the
+               <import> task.
+             - customize it to your needs.
+         - Customize the whole content of build.xml
+             - copy/paste the content of the rules files (minus the top node)
+               into this file, replacing the <import> task.
+             - customize to your needs.
+
+         ***********************
+         ****** IMPORTANT ******
+         ***********************
+         In all cases you must update the value of version-tag below to read 'custom' instead of an integer,
+         in order to avoid having your file be overridden by tools such as "android update project"
+    -->
+    <!-- version-tag: 1 -->
+    <import file="${sdk.dir}/tools/ant/build.xml"/>
+
+    <target name="dist-clean" depends="clean, clean-libs"/>
+
+    <target name="clean-libs">
+        <delete failonerror="false">
+            <fileset dir="libs" includes="**/*.jar"/>
+        </delete>
+    </target>
+
+    <target name="reinstall" description="Reinstall application on device">
+        <echo message="Reinstalling ${ant.project.name}-debug.apk"/>
+        <exec executable="adb">
+            <arg value="install"/>
+            <arg value="-r"/>
+            <arg value="bin/${ant.project.name}-debug.apk"/>
+        </exec>
+    </target>
+
+    <target name="runapp">
+        <echo message="Run App"/>
+        <adb-am pkg="com.hybble.rest" main="com.hybble.rest.MainActivity"/>
+    </target>
+
+    <macrodef name="adb-am">
+        <attribute name="pkg"/>
+        <attribute name="main"/>
+        <sequential>
+            <echo message="Starting app @{pkg}/@{main}"/>
+            <exec executable="adb">
+                <arg value="shell"/>
+                <arg value="am"/>
+                <arg value="start"/>
+                <arg value="-a"/>
+                <arg value="android.intent.action.MAIN"/>
+                <arg value="-n"/>
+                <arg value="@{pkg}/@{main}"/>
+            </exec>
+        </sequential>
+    </macrodef>
+
+</project>
